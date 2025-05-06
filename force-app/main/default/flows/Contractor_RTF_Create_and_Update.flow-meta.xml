@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>58.0</apiVersion>
+    <areMetricsLoggedToDataCloud>false</areMetricsLoggedToDataCloud>
+    <description>AI Generated flow for a Contractor__c record is created or edited specifically the...</description>
+    <environments>Default</environments>
+    <formulas>
+        <name>BudgetPercentForm</name>
+        <dataType>Number</dataType>
+        <expression>({!$Record.Cost__c} / {!$Record.Project__r.Budget_Cost__c}) * 100</expression>
+        <scale>2</scale>
+    </formulas>
+    <interviewLabel>AI Generated Flow for a Contractor__c record is created or edited specifically the...</interviewLabel>
+    <label>Contractor RTF Create and Update</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>GptId</name>
+        <value>
+            <stringValue>95da01be-3794-4708-8207-90d64fc216f6</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>GptLlmIds</name>
+        <value>
+            <stringValue>[&quot;f4f79a2b-f84d-4f27-8222-e2516fa4f5ed&quot;]</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>OriginBuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <recordUpdates>
+        <name>Update_Percent</name>
+        <label>Update Percent</label>
+        <locationX>176</locationX>
+        <locationY>287</locationY>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>$Record.Id</elementReference>
+            </value>
+        </filters>
+        <inputAssignments>
+            <field>Cost__c</field>
+            <value>
+                <elementReference>BudgetPercentForm</elementReference>
+            </value>
+        </inputAssignments>
+        <inputReference>$Record</inputReference>
+    </recordUpdates>
+    <start>
+        <locationX>50</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Update_Percent</targetReference>
+        </connector>
+        <object>Contractor__c</object>
+        <recordTriggerType>CreateAndUpdate</recordTriggerType>
+        <triggerType>RecordBeforeSave</triggerType>
+    </start>
+    <status>Obsolete</status>
+</Flow>
