@@ -1,4 +1,5 @@
 1. Custom Object: Contractor_Billing__c
+Plural: Contractor_Billing__c
 Custom Fields:
 Field Name: Contractor_Invoice__c
 Field Type: Lookup
