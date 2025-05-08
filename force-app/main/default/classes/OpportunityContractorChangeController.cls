@@ -78,6 +78,7 @@ public with sharing class OpportunityContractorChangeController {
         }
     }
     
+    
     public class OpportunityWrapper {
         @AuraEnabled public List<OpportunityContractorChangeWrapper> changes { get; set; }
         @AuraEnabled public Decimal totalCost { get; set; }
