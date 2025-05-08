@@ -37,42 +37,70 @@ public with sharing class OpportunityContractorController {
     }
 
     @AuraEnabled
-    public static void updateContractorChange(Id contractorChangeId, Decimal newCost, Decimal opportunityAmount) {
-        // First get all contractor changes for the opportunity to validate total cost
-        Contractor_Changes__c currentChange = [
-            SELECT Id, Cost__c, Budget_Percentage__c, Change_Type__c, Opportunity__c
-            FROM Contractor_Changes__c
-            WHERE Id = :contractorChangeId
-            LIMIT 1
-        ];
-
-        // Get all contractor changes for the same opportunity
-        List<Contractor_Changes__c> allChanges = [
-            SELECT Id, Cost__c
-            FROM Contractor_Changes__c
-            WHERE Opportunity__c = :currentChange.Opportunity__c
-            AND Id != :contractorChangeId
-        ];
-
-        // Calculate total cost including the new cost
-        Decimal totalCost = newCost;
-        for (Contractor_Changes__c change : allChanges) {
-            totalCost += change.Cost__c;
+    public static void updateMultipleContractorChanges(List<ContractorChangeWrapper> changes, Id opportunityId) {
+        if (changes == null || changes.isEmpty()) {
+            throw new AuraHandledException('No changes provided for update');
         }
 
+        // Get opportunity amount for validation
+        Decimal opportunityAmount = getOpportunityAmount(opportunityId);
+        
+        // Get all contractor changes for the opportunity
+        List<Contractor_Changes__c> allCurrentChanges = [
+            SELECT Id, Cost__c
+            FROM Contractor_Changes__c
+            WHERE Opportunity__c = :opportunityId
+        ];
+        
+        // Create map of current changes
+        Map<Id, Contractor_Changes__c> currentChangesMap = new Map<Id, Contractor_Changes__c>(allCurrentChanges);
+        
+        // Calculate total cost including all changes
+        Decimal totalCost = 0;
+        Map<Id, Contractor_Changes__c> updatesMap = new Map<Id, Contractor_Changes__c>();
+        
+        // First pass: prepare updates and calculate total
+        for (ContractorChangeWrapper change : changes) {
+            Contractor_Changes__c updateChange = new Contractor_Changes__c(
+                Id = change.id,
+                Cost__c = change.cost,
+                Change_Type__c = 'Reallocation',
+                Budget_Percentage__c = (change.cost / opportunityAmount) * 100
+            );
+            updatesMap.put(change.id, updateChange);
+            totalCost += change.cost;
+        }
+        
+        // Add costs from unchanged records
+        for (Contractor_Changes__c current : allCurrentChanges) {
+            if (!updatesMap.containsKey(current.Id)) {
+                totalCost += current.Cost__c;
+            }
+        }
+        
         // Validate total cost against opportunity amount
-        if (totalCost != opportunityAmount) {
+        if (Math.abs(totalCost - opportunityAmount) > 0.01) {
             throw new AuraHandledException('Total Contractor cost ($' + totalCost.setScale(2) + 
                 ') must equal the Opportunity Amount ($' + opportunityAmount.setScale(2) + ')');
         }
+        
+        // Perform update
+        if (!updatesMap.isEmpty()) {
+            update updatesMap.values();
+        }
+    }
 
-        // Update Cost and Change Type
-        currentChange.Cost__c = newCost;
-        currentChange.Change_Type__c = 'Reallocation'; // Update Change Type when cost is modified
-        currentChange.Budget_Percentage__c = (newCost / opportunityAmount) * 100;
-
-        // Save changes
-        update currentChange;
+    // Keep the original single update method for backward compatibility
+    @AuraEnabled
+    public static void updateContractorChange(Id contractorChangeId, Decimal newCost, Decimal opportunityAmount) {
+        List<ContractorChangeWrapper> changes = new List<ContractorChangeWrapper>();
+        ContractorChangeWrapper wrapper = new ContractorChangeWrapper();
+        wrapper.id = contractorChangeId;
+        wrapper.cost = newCost;
+        
+        // Get the opportunity ID from the contractor change
+        Contractor_Changes__c change = [SELECT Opportunity__c FROM Contractor_Changes__c WHERE Id = :contractorChangeId];
+        updateMultipleContractorChanges(changes, change.Opportunity__c);
     }
 
     // Wrapper class for UI data

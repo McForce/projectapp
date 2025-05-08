@@ -2,7 +2,7 @@
 import { LightningElement, api, wire, track } from 'lwc';
 import getContractorChanges from '@salesforce/apex/OpportunityContractorController.getContractorChanges';
 import getOpportunityAmount from '@salesforce/apex/OpportunityContractorController.getOpportunityAmount';
-import updateContractorChange from '@salesforce/apex/OpportunityContractorController.updateContractorChange';
+import updateMultipleContractorChanges from '@salesforce/apex/OpportunityContractorController.updateMultipleContractorChanges';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { refreshApex } from '@salesforce/apex';
 
@@ -66,19 +66,27 @@ export default class ContractorChanges extends LightningElement {
     }
 
     // Handle save event
-    async handleSave(event) {
+    handleSave(event) {
         const draftValues = event.detail.draftValues;
         
-        try {
-            // Process each changed record sequentially to maintain consistency
-            for (let draft of draftValues) {
-                await updateContractorChange({ 
-                    contractorChangeId: draft.id,
-                    newCost: parseFloat(draft.cost),
-                    opportunityAmount: this.opportunityAmount
-                });
-            }
+        // Create updated records based on draft values
+        const updatedChanges = draftValues.map(draft => {
+            const original = this.contractorChanges.find(change => change.id === draft.id);
+            return {
+                id: draft.id,
+                name: original.name,
+                cost: parseFloat(draft.cost),
+                changeType: 'Reallocation',
+                budgetPercentage: (parseFloat(draft.cost) / this.opportunityAmount) * 100
+            };
+        });
 
+        // Call apex method to update all changes at once
+        updateMultipleContractorChanges({ 
+            changes: updatedChanges, 
+            opportunityId: this.recordId 
+        })
+        .then(() => {
             // Show success message
             this.dispatchEvent(
                 new ShowToastEvent({
@@ -89,9 +97,9 @@ export default class ContractorChanges extends LightningElement {
             );
             
             this.draftValues = []; // Clear all draft values
-            await refreshApex(this.wiredContractorChangesResult); // Refresh the data
-            
-        } catch (error) {
+            return refreshApex(this.wiredContractorChangesResult); // Refresh the data
+        })
+        .catch(error => {
             // Show error message
             this.dispatchEvent(
                 new ShowToastEvent({
@@ -100,7 +108,7 @@ export default class ContractorChanges extends LightningElement {
                     variant: 'error'
                 })
             );
-        }
+        });
     }
 
     // Helper to calculate total cost
