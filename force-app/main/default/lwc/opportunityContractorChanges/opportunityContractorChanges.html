@@ -1,0 +1,38 @@
+<template>
+    <lightning-card title="Contractor Changes" icon-name="standard:opportunity">
+        <div class="slds-var-p-horizontal_small">
+            <template if:true={data}>
+                <lightning-datatable
+                    key-field="recordId"
+                    data={data}
+                    columns={columns}
+                    hide-checkbox-column
+                    draft-values={draftValues}
+                    onsave={handleSave}>
+                </lightning-datatable>
+                
+                <div class="slds-grid slds-grid_align-spread slds-var-p-top_small">
+                    <div class="slds-col">
+                        <div class="slds-text-title_caps">Budget Summary</div>
+                        <div class="slds-text-body_regular">
+                            Total Cost: <lightning-formatted-number value={footerData.totalCost} format-style="currency" currency-code="USD"></lightning-formatted-number>
+                        </div>
+                        <div class="slds-text-body_regular">
+                            Opportunity Amount: <lightning-formatted-number value={footerData.opportunityAmount} format-style="currency" currency-code="USD"></lightning-formatted-number>
+                        </div>
+                        <div class={differenceClass}>
+                            Difference: <lightning-formatted-number value={footerData.difference} format-style="currency" currency-code="USD"></lightning-formatted-number>
+                        </div>
+                    </div>
+                </div>
+            </template>
+            
+            <template if:true={error}>
+                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error" role="alert">
+                    <span class="slds-assistive-text">error</span>
+                    <h2>{error.body.message}</h2>
+                </div>
+            </template>
+        </div>
+    </lightning-card>
+</template>
