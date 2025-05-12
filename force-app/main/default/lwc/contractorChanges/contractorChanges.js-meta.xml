@@ -3,11 +3,10 @@
     <apiVersion>57.0</apiVersion>
     <isExposed>true</isExposed>
     <targets>
-        <target>lightning__RecordAction</target>
+        <target>lightning__RecordPage</target>
     </targets>
     <targetConfigs>
-        <targetConfig targets="lightning__RecordAction">
-            <actionType>Action</actionType>
+        <targetConfig targets="lightning__RecordPage">
             <objects>
                 <object>Opportunity</object>
             </objects>

@@ -1,70 +1,96 @@
 public with sharing class OpportunityContractorController {
-    @AuraEnabled
-    public static ContractorChangeWrapper getContractorChanges(Id opportunityId) {
+    
+    @AuraEnabled(cacheable=true)
+    public static List<ContractorChangeWrapper> getContractorChanges(Id opportunityId) {
         // Verify CRUD permissions
-        if (!Schema.sObjectType.Contractor_Changes__c.isAccessible() || 
-            !Schema.sObjectType.Opportunity.isAccessible()) {
-            throw new AuraHandledException('Insufficient permissions to access records');
+        if (!Schema.sObjectType.Contractor_Changes__c.isAccessible()) {
+            throw new AuraHandledException('Insufficient permissions to access Contractor Changes');
+        }
+        
+        List<ContractorChangeWrapper> wrapperList = new List<ContractorChangeWrapper>();
+        
+        try {
+            List<Contractor_Changes__c> contractorChanges = [
+                SELECT Id, Contractor__r.Name, Cost__c, Change_Type__c
+                FROM Contractor_Changes__c
+                WHERE Opportunity__c = :opportunityId
+            ];
+            
+            Decimal opportunityAmount = getOpportunityAmount(opportunityId);
+            
+            for (Contractor_Changes__c cc : contractorChanges) {
+                wrapperList.add(new ContractorChangeWrapper(cc, opportunityAmount));
+            }
+            
+            return wrapperList;
+        } catch (Exception e) {
+            throw new AuraHandledException('Error fetching contractor changes: ' + e.getMessage());
+        }
+    }
+    
+    @AuraEnabled(cacheable=true)
+    public static Decimal getOpportunityAmount(Id opportunityId) {
+        // Verify CRUD permissions
+        if (!Schema.sObjectType.Opportunity.isAccessible()) {
+            throw new AuraHandledException('Insufficient permissions to access Opportunity');
         }
         
         try {
-            Opportunity opp = [SELECT Id, Amount FROM Opportunity WHERE Id = :opportunityId WITH SECURITY_ENFORCED];
-            List<Contractor_Changes__c> contractorChanges = [
-                SELECT Id, Name, Contractor__r.Name, Cost__c, Change_Type__c
-                FROM Contractor_Changes__c 
-                WHERE Opportunity__c = :opportunityId 
-                WITH SECURITY_ENFORCED
-            ];
-            
-            return new ContractorChangeWrapper(opp, contractorChanges);
+            Opportunity opp = [SELECT Amount FROM Opportunity WHERE Id = :opportunityId LIMIT 1];
+            return opp.Amount;
         } catch (Exception e) {
-            throw new AuraHandledException('Error retrieving contractor changes: ' + e.getMessage());
+            throw new AuraHandledException('Error fetching opportunity amount: ' + e.getMessage());
         }
     }
     
     @AuraEnabled
-    public static void updateContractorChanges(Id opportunityId, List<Contractor_Changes__c> changes) {
+    public static String updateContractorChanges(List<ContractorChangeWrapper> changes, Id opportunityId) {
         // Verify CRUD permissions
         if (!Schema.sObjectType.Contractor_Changes__c.isUpdateable()) {
-            throw new AuraHandledException('Insufficient permissions to update records');
+            throw new AuraHandledException('Insufficient permissions to update Contractor Changes');
         }
         
         try {
-            // Get Opportunity amount for validation
-            Opportunity opp = [SELECT Amount FROM Opportunity WHERE Id = :opportunityId WITH SECURITY_ENFORCED];
-            
-            // Calculate total cost
+            Decimal opportunityAmount = getOpportunityAmount(opportunityId);
             Decimal totalCost = 0;
-            for(Contractor_Changes__c change : changes) {
-                totalCost += change.Cost__c;
-                // Set Change Type to Reallocation if cost has changed
-                change.Change_Type__c = 'Reallocation';
+            List<Contractor_Changes__c> recordsToUpdate = new List<Contractor_Changes__c>();
+            
+            for (ContractorChangeWrapper wrapper : changes) {
+                totalCost += wrapper.cost;
+                
+                Contractor_Changes__c cc = new Contractor_Changes__c(
+                    Id = wrapper.recordId,
+                    Cost__c = wrapper.cost,
+                    Change_Type__c = 'Reallocation'
+                );
+                recordsToUpdate.add(cc);
             }
             
             // Validate total cost equals opportunity amount
-            if (totalCost != opp.Amount) {
-                throw new AuraHandledException('Total cost must equal opportunity amount');
+            if (totalCost != opportunityAmount) {
+                throw new AuraHandledException('Total cost must equal the Opportunity amount of ' + opportunityAmount);
             }
             
-            update changes;
+            update recordsToUpdate;
+            return 'Success';
         } catch (Exception e) {
-            throw new AuraHandledException('Error updating contractor changes: ' + e.getMessage());
+            throw new AuraHandledException(e.getMessage());
         }
     }
     
     public class ContractorChangeWrapper {
-        @AuraEnabled public Opportunity opportunity { get; set; }
-        @AuraEnabled public List<Contractor_Changes__c> contractorChanges { get; set; }
-        @AuraEnabled public Decimal totalCost { get; set; }
+        @AuraEnabled public Id recordId { get; set; }
+        @AuraEnabled public String contractorName { get; set; }
+        @AuraEnabled public Decimal cost { get; set; }
+        @AuraEnabled public Decimal budgetPercentage { get; set; }
+        @AuraEnabled public String changeType { get; set; }
         
-        public ContractorChangeWrapper(Opportunity opp, List<Contractor_Changes__c> changes) {
-            this.opportunity = opp;
-            this.contractorChanges = changes;
-            this.totalCost = 0;
-            
-            for(Contractor_Changes__c change : changes) {
-                this.totalCost += change.Cost__c;
-            }
+        public ContractorChangeWrapper(Contractor_Changes__c cc, Decimal opportunityAmount) {
+            this.recordId = cc.Id;
+            this.contractorName = cc.Contractor__r.Name;
+            this.cost = cc.Cost__c;
+            this.changeType = cc.Change_Type__c;
+            this.budgetPercentage = opportunityAmount != 0 ? (cc.Cost__c / opportunityAmount) * 100 : 0;
         }
     }
 }
