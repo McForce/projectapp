@@ -1,42 +1,52 @@
 public with sharing class OpportunityContractorHandler {
     
-    public static void createInitialContractorChanges(List<Opportunity> newOpportunities) {
-        List<Contractor_Changes__c> initialContractorChanges = new List<Contractor_Changes__c>();
+    public static void handleAfterInsert(List<Opportunity> newOpportunities) {
+        // Check CRUD permissions
+        if (!Schema.sObjectType.Contractor_Changes__c.isCreateable()) {
+            throw new AuraHandledException('Insufficient permissions to create Contractor Changes');
+        }
         
-        // Get default contractors for projects
-        List<Contractor__c> defaultContractors = [
-            SELECT Id, Name, Cost__c 
-            FROM Contractor__c 
-            WHERE Is_Default__c = true
-        ];
+        List<Contractor_Changes__c> contractorChangesToCreate = new List<Contractor_Changes__c>();
         
         for (Opportunity opp : newOpportunities) {
-            // If no default contractors, skip
-            if (defaultContractors.isEmpty()) {
-                continue;
-            }
-            
-            // Create initial contractor changes for each default contractor
-            for (Contractor__c contractor : defaultContractors) {
-                Contractor_Changes__c change = new Contractor_Changes__c(
-                    Opportunity__c = opp.Id,
-                    Contractor__c = contractor.Id,
-                    Cost__c = 0, // Initially set to 0
-                    Change_Type__c = 'Initial',
-                    Budget_Percentage__c = 0
-                );
-                initialContractorChanges.add(change);
+            if (opp.Amount > 0) {
+                // Query existing contractors for the project
+                List<Contractor__c> contractors = [
+                    SELECT Id, Name, Cost__c
+                    FROM Contractor__c
+                    WHERE Project__c = :opp.Project__c
+                    WITH SECURITY_ENFORCED
+                ];
+                
+                if (!contractors.isEmpty()) {
+                    Decimal remainingAmount = opp.Amount;
+                    Integer contractorCount = contractors.size();
+                    
+                    for (Contractor__c contractor : contractors) {
+                        Decimal contractorAmount;
+                        if (contractorCount > 1) {
+                            contractorAmount = remainingAmount / contractorCount;
+                            remainingAmount -= contractorAmount;
+                            contractorCount--;
+                        } else {
+                            contractorAmount = remainingAmount;
+                        }
+                        
+                        contractorChangesToCreate.add(new Contractor_Changes__c(
+                            Opportunity__c = opp.Id,
+                            Contractor__c = contractor.Id,
+                            Cost__c = contractorAmount,
+                            Budget_Percentage__c = (contractorAmount / opp.Amount) * 100,
+                            Change_Type__c = 'Initial',
+                            Project__c = opp.Project__c
+                        ));
+                    }
+                }
             }
         }
         
-        // Insert initial contractor changes
-        if (!initialContractorChanges.isEmpty()) {
-            insert initialContractorChanges;
+        if (!contractorChangesToCreate.isEmpty()) {
+            insert contractorChangesToCreate;
         }
-    }
-    
-    // Trigger handler method
-    public static void handleAfterInsert(List<Opportunity> newOpportunities) {
-        createInitialContractorChanges(newOpportunities);
     }
 }

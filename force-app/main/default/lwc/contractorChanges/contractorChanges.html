@@ -1,0 +1,36 @@
+<template>
+    <lightning-card title="Contractor Changes" icon-name="standard:opportunity">
+        <div class="slds-m-around_medium">
+            <template if:true={isLoading}>
+                <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+            </template>
+
+            <div class="slds-grid slds-gutters slds-m-bottom_medium">
+                <div class="slds-col">
+                    <div class="slds-text-title_caps">Total Cost</div>
+                    <lightning-formatted-number 
+                        value={totalCost}
+                        format-style="currency"
+                        currency-code="USD">
+                    </lightning-formatted-number>
+                </div>
+                <div class="slds-col">
+                    <div class="slds-text-title_caps">Opportunity Amount</div>
+                    <lightning-formatted-number 
+                        value={opportunityAmount}
+                        format-style="currency"
+                        currency-code="USD">
+                    </lightning-formatted-number>
+                </div>
+            </div>
+
+            <lightning-datatable
+                key-field="Id"
+                data={data}
+                columns={columns}
+                draft-values={draftValues}
+                onsave={handleSave}>
+            </lightning-datatable>
+        </div>
+    </lightning-card>
+</template>
