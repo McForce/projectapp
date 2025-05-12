@@ -57,3 +57,18 @@ Reusability: Design the Apex handler to accept any Project Id for flexibility.
 Code best Practice: Ensure you use apex best practice which includes validate CRUD permission before SOQL/DML operations
 Avoid using if statements without curly braces (rule: Code Style-IfStmtsMustUseBraces)
 Validate CRUD permission before SOQL/DML operation (rule: Security-ApexCRUDViolation)
+
+Technical Flow (Mermaid)
+sequenceDiagram
+    participant LWC
+    participant Apex
+    participant Database
+    participant User
+
+    LWC->>Apex: getContractorChanges(oppId)
+    LWC->>Apex: getOpportunityAmount(oppId)
+    Apex->>Database: Query Contractor_Changes__c
+    Apex->>Database: Query Opportunity
+    Database-->>Apex: Return data
+    Apex-->>LWC: Return data
+    LWC->>User: Display data table
