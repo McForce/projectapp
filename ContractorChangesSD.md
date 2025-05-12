@@ -67,3 +67,17 @@ Provide a view when a button is clicked on the Opportunity record that:
 Apex Handler Opportunity Contractor Handler
 - Creates initial contractor changes when opportunity is created
 - Handles the After Insert trigger event
+
+
+
+
+
+
+Key Considerations:
+Performance: Only fetch necessary fields; use aggregate queries where possible.
+Scalability: Future requirements will include adding and removing Contractor Changes - build for scale
+Security: Enforce field-level and object-level security in Apex.
+Reusability: Design the Apex handler to accept any Project Id for flexibility.
+Code best Practice: Ensure you use apex best practice which includes not adding logic in the trigger, validate CRUD permission before SOQL/DML operations
+Avoid using if statements without curly braces (rule: Code Style-IfStmtsMustUseBraces)
+Validate CRUD permission before SOQL/DML operation (rule: Security-ApexCRUDViolation)
