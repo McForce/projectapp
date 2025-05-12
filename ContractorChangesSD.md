@@ -21,8 +21,8 @@ Contractor Changes (Child) – Lookup to Project and Contractor
 Contractor (Child) – Lookup to Project
 Contractor Billing (Child) – Lookup to Contractor
 Backend Implementation:
-Apex Controller Class:
-Develop an Apex Controller (e.g., OpportunityContractorChangeController) to:
+Apex Controller Class: OpportunityContractorController
+Develop an Apex Controller to:
 Fetch all Contractor Change records related to the Opportunity (by Opportunity Id).
 Calculate each Contractor Change's Budget Percentage (Cost / Opportunity.Amount).
 Aggregate total Cost for the Budget Total.
@@ -31,15 +31,19 @@ Ensure multiple record updates on save
 On save, validate that the total Cost matches the Opportunity Amount.
 If a Contractor Change’s Cost is updated, set its Change Type to "Reallocation" before update.
 Dont use a trigger, handle in the controller through the save action
+Methods:   
+  1. Get Contractor Changes 
+  2. Get Opportunity Amount 
+  3. Update Multiple Contractor Changes
 
-Apex Wrapper Class:
-Create a Wrapper class (e.g., ContractorChangeWrapper) to:
+Apex Helper Class: OpportunityContractorHandler
+Create a Helper class to:
 Aggregate data for each Contractor Change (Contractor Name, Cost, Budget Percentage, Change Type, etc.).
 Expose calculated fields like Budget Percentage.
 Pass data efficiently to/from the LWC.
 
 Frontend Implementation:
-Lightning Web Component (LWC):
+Lightning Web Component (LWC): ContractorChanges
 Display a table of Contractor Changes with columns: Contractor (Contractor Change record) , Cost (editable), Budget Percentage (read-only).
 Calculate and display the Budget Total (sum of Costs) at the bottom.
 Allow inline editing of the Cost field.
