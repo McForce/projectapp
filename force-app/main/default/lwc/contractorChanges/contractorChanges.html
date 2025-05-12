@@ -1,36 +1,37 @@
 <template>
-    <lightning-card title="Contractor Changes" icon-name="standard:opportunity">
+    <lightning-card title="Contractor Changes" icon-name="standard:partner_fund_claim">
         <div class="slds-m-around_medium">
             <template if:true={isLoading}>
-                <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+                <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
             </template>
-
-            <div class="slds-grid slds-gutters slds-m-bottom_medium">
+            
+            <lightning-datatable
+                key-field="id"
+                data={data}
+                columns={columns}
+                draft-values={draftValues}
+                onsave={handleSave}
+                hide-checkbox-column>
+            </lightning-datatable>
+            
+            <div class="slds-m-top_medium slds-grid slds-grid_align-spread">
                 <div class="slds-col">
-                    <div class="slds-text-title_caps">Total Cost</div>
+                    <strong>Opportunity Amount:</strong> 
                     <lightning-formatted-number 
-                        value={totalCost}
-                        format-style="currency"
+                        value={opportunityAmount} 
+                        format-style="currency" 
                         currency-code="USD">
                     </lightning-formatted-number>
                 </div>
                 <div class="slds-col">
-                    <div class="slds-text-title_caps">Opportunity Amount</div>
+                    <strong>Total Cost:</strong> 
                     <lightning-formatted-number 
-                        value={opportunityAmount}
-                        format-style="currency"
+                        value={totalCost} 
+                        format-style="currency" 
                         currency-code="USD">
                     </lightning-formatted-number>
                 </div>
             </div>
-
-            <lightning-datatable
-                key-field="Id"
-                data={data}
-                columns={columns}
-                draft-values={draftValues}
-                onsave={handleSave}>
-            </lightning-datatable>
         </div>
     </lightning-card>
 </template>

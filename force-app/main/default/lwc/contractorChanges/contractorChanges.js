@@ -1,67 +1,59 @@
-import { LightningElement, api, wire, track } from 'lwc';
-import { refreshApex } from '@salesforce/apex';
+import { LightningElement, api, track } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import getContractorChanges from '@salesforce/apex/OpportunityContractorController.getContractorChanges';
-import updateContractorChanges from '@salesforce/apex/OpportunityContractorController.updateMultipleContractorChanges';
-import getOpportunityAmount from '@salesforce/apex/OpportunityContractorController.getOpportunityAmount';
-
-const COLUMNS = [
-    { label: 'Contractor Name', fieldName: 'contractorName', type: 'text', editable: false },
-    { label: 'Cost', fieldName: 'Cost__c', type: 'currency', editable: true },
-    { label: 'Budget Percentage', fieldName: 'Budget_Percentage__c', type: 'percent', editable: false },
-    { label: 'Change Type', fieldName: 'Change_Type__c', type: 'text', editable: false }
-];
+import updateContractorChanges from '@salesforce/apex/OpportunityContractorController.updateContractorChanges';
 
 export default class ContractorChanges extends LightningElement {
     @api recordId; // Opportunity Id
     @track data = [];
-    @track columns = COLUMNS;
-    @track totalCost = 0;
-    @track opportunityAmount = 0;
-    @track isLoading = true;
+    @track columns = [
+        { label: 'Contractor', fieldName: 'contractorName', type: 'text', editable: false },
+        { label: 'Cost', fieldName: 'cost', type: 'currency', editable: true },
+        { label: 'Budget %', fieldName: 'budgetPercentage', type: 'percent-fixed', editable: false },
+        { label: 'Change Type', fieldName: 'changeType', type: 'text', editable: false }
+    ];
     
-    wiredContractorChangesResult;
-    draftValues = [];
+    @track opportunityAmount = 0;
+    @track totalCost = 0;
+    @track isLoading = false;
+    @track draftValues = [];
 
-    @wire(getContractorChanges, { opportunityId: '$recordId' })
-    wiredContractorChanges(result) {
-        this.wiredContractorChangesResult = result;
-        if (result.data) {
-            this.data = result.data;
-            this.calculateTotals();
-            this.isLoading = false;
-        } else if (result.error) {
-            this.handleError(result.error);
-        }
+    connectedCallback() {
+        this.loadContractorChanges();
     }
 
-    @wire(getOpportunityAmount, { opportunityId: '$recordId' })
-    wiredOpportunityAmount({ error, data }) {
-        if (data) {
-            this.opportunityAmount = data;
-        } else if (error) {
-            this.handleError(error);
+    async loadContractorChanges() {
+        this.isLoading = true;
+        try {
+            const result = await getContractorChanges({ opportunityId: this.recordId });
+            this.data = result.contractorChanges;
+            this.opportunityAmount = result.opportunity.Amount;
+            this.calculateTotals();
+        } catch (error) {
+            this.showToast('Error', 'Error loading contractor changes', 'error');
+        } finally {
+            this.isLoading = false;
         }
     }
 
     handleSave(event) {
         this.isLoading = true;
-        const records = event.detail.draftValues;
+        const records = event.detail.draftValues.slice().map(draftValue => {
+            const fields = Object.assign({}, draftValue);
+            return { fields };
+        });
 
-        updateContractorChanges({ contractorChanges: records })
+        updateContractorChanges({ 
+            opportunityId: this.recordId, 
+            changes: records 
+        })
             .then(() => {
-                this.dispatchEvent(
-                    new ShowToastEvent({
-                        title: 'Success',
-                        message: 'Contractor Changes updated',
-                        variant: 'success'
-                    })
-                );
+                this.showToast('Success', 'Contractor changes updated', 'success');
                 this.draftValues = [];
-                return refreshApex(this.wiredContractorChangesResult);
+                return this.loadContractorChanges();
             })
             .catch(error => {
-                this.handleError(error);
+                this.showToast('Error', error.body.message, 'error');
             })
             .finally(() => {
                 this.isLoading = false;
@@ -69,17 +61,16 @@ export default class ContractorChanges extends LightningElement {
     }
 
     calculateTotals() {
-        this.totalCost = this.data.reduce((total, row) => total + (row.Cost__c || 0), 0);
+        this.totalCost = this.data.reduce((total, item) => total + (item.cost || 0), 0);
     }
 
-    handleError(error) {
+    showToast(title, message, variant) {
         this.dispatchEvent(
             new ShowToastEvent({
-                title: 'Error',
-                message: error.body?.message || 'Unknown error occurred',
-                variant: 'error'
+                title: title,
+                message: message,
+                variant: variant
             })
         );
-        this.isLoading = false;
     }
 }

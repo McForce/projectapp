@@ -1,4 +1,4 @@
-Business Requirement: have a button on the Opportunity that provides a view of all Contractor Changes associated with the Opportunity displaying the Contractor, their Cost and Budget percentage, and have a Budget Total at the bottom (total Cost) and do inline editing
+Business Requirement: a view the Opportunity record page that provides a view of all Contractor Changes associated with the Opportunity displaying the Contractor, their Cost and Budget percentage, and have a Budget Total at the bottom (total Cost) and do inline editing
 
 The user should be able to inline edit where they are able to Update the the Cost - that will update the Budget percentage (percentage of Opportunity’s Amount)
 
@@ -12,7 +12,7 @@ The user should be able to inline edit where they are able to Update the the Cos
 Validation on save that the total Cost must equal the Opportunity’s Amount
 Automation - when the Contractor’s cost is updated the Change type on the Contractor Change record is set to Reallocation
 Multiple record updates on save
-Component is accessible through an action (button) on the Opportunity
+Component is accessible through the Opportunity record page
 Technical Approach:
 
 Data Model Relationships:
@@ -50,7 +50,7 @@ Allow inline editing of the Cost field.
 Send updates to the Apex Controller on save.
 Display error messages if validation fails (i.e., if Budget Total ≠ Opportunity Amount).
 Disable save until the validation passes.
-LWC will run from a action (button) from the Opportunity Lightning record page.
+LWC will run on the Opportunity Lightning record page.
 Ensure CRUD/FLS compliance in the Apex Controller.
 Handle exceptions and display user-friendly error messages.
 Key Considerations:
