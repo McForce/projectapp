@@ -1,88 +1,39 @@
-import { LightningElement, api, wire, track } from 'lwc';
-import { ShowToastEvent } from 'lightning/platformShowToastEvent';
-import getContractorChanges from '@salesforce/apex/OpportunityContractorController.getContractorChanges';
-import getOpportunityAmount from '@salesforce/apex/OpportunityContractorController.getOpportunityAmount';
-import updateContractorChanges from '@salesforce/apex/OpportunityContractorController.updateContractorChanges';
+<template>
+    <lightning-card title="Contractor Changes" icon-name="standard:partner_fund_allocation">
+        <div class="slds-m-around_medium">
+            <template if:true={error}>
+                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error" role="alert">
+                    <span class="slds-assistive-text">error</span>
+                    <h2>{error}</h2>
+                </div>
+            </template>
 
-const COLUMNS = [
-    { label: 'Contractor', fieldName: 'contractorName', type: 'text', editable: false },
-    { label: 'Cost', fieldName: 'cost', type: 'currency', editable: true },
-    { label: 'Budget %', fieldName: 'budgetPercentage', type: 'percent-fixed', editable: false },
-    { label: 'Change Type', fieldName: 'changeType', type: 'text', editable: false }
-];
+            <lightning-datatable
+                key-field="recordId"
+                data={data}
+                columns={columns}
+                onsave={handleSave}
+                draft-values={draftValues}>
+            </lightning-datatable>
 
-export default class ContractorChanges extends LightningElement {
-    @api recordId; // Opportunity Id
-    @track data = [];
-    @track columns = COLUMNS;
-    @track opportunityAmount;
-    @track isLoading = true;
-    @track draftValues = [];
-    
-    connectedCallback() {
-        this.loadData();
-    }
-    
-    async loadData() {
-        try {
-            this.isLoading = true;
-            const [changes, amount] = await Promise.all([
-                getContractorChanges({ opportunityId: this.recordId }),
-                getOpportunityAmount({ opportunityId: this.recordId })
-            ]);
-            
-            this.data = changes;
-            this.opportunityAmount = amount;
-        } catch (error) {
-            this.showToast('Error', error.body.message, 'error');
-        } finally {
-            this.isLoading = false;
-        }
-    }
-    
-    get totalCost() {
-        return this.data.reduce((sum, item) => sum + (item.cost || 0), 0);
-    }
-    
-    get isSaveDisabled() {
-        return this.totalCost !== this.opportunityAmount;
-    }
-    
-    handleSave(event) {
-        const draftValues = event.detail.draftValues;
-        
-        // Update the data with draft values
-        const updatedData = this.data.map(item => {
-            const draft = draftValues.find(d => d.id === item.recordId);
-            return draft ? { ...item, ...draft } : item;
-        });
-        
-        this.isLoading = true;
-        
-        updateContractorChanges({ 
-            changes: updatedData,
-            opportunityId: this.recordId
-        })
-            .then(() => {
-                this.showToast('Success', 'Changes saved successfully', 'success');
-                this.draftValues = [];
-                return this.loadData();
-            })
-            .catch(error => {
-                this.showToast('Error', error.body.message, 'error');
-            })
-            .finally(() => {
-                this.isLoading = false;
-            });
-    }
-    
-    showToast(title, message, variant) {
-        this.dispatchEvent(
-            new ShowToastEvent({
-                title,
-                message,
-                variant
-            })
-        );
-    }
-}
+            <div class="slds-grid slds-grid_align-spread slds-m-top_medium">
+                <div class="slds-col">
+                    <div class="slds-text-title_caps">Opportunity Amount</div>
+                    <lightning-formatted-number 
+                        value={opportunityAmount}
+                        format-style="currency"
+                        currency-code="USD">
+                    </lightning-formatted-number>
+                </div>
+                <div class="slds-col">
+                    <div class="slds-text-title_caps">Total Cost</div>
+                    <lightning-formatted-number 
+                        value={totalCost}
+                        format-style="currency"
+                        currency-code="USD">
+                    </lightning-formatted-number>
+                </div>
+            </div>
+        </div>
+    </lightning-card>
+</template>
