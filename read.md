@@ -1,3 +1,6 @@
+-OpportunityContractorController
+
+
 public with sharing class OpportunityContractorController {
     @AuraEnabled(cacheable=true)
     public static List<ContractorChangeWrapper> getContractorChanges(Id opportunityId) {
@@ -118,8 +121,9 @@ public with sharing class OpportunityContractorController {
 
 
 
+-ContractorChanges LWC
 
-
+-HTML
 
 <template>
     <lightning-card title="Contractor Changes" icon-name="standard:contract">
@@ -166,7 +170,7 @@ public with sharing class OpportunityContractorController {
  </template>
 
 
-
+-JS
 
 // Imports
 import { LightningElement, api, wire, track } from 'lwc';
@@ -312,6 +316,8 @@ export default class ContractorChanges extends LightningElement {
        return `$${this.totalCost.toFixed(2)}`;
    }
 }
+
+-JS.XML
 
 <?xml version="1.0" encoding="UTF-8"?>
 <LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
