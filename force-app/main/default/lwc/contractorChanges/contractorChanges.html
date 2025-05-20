@@ -1,0 +1,40 @@
+<template>
+    <lightning-card title="Contractor Changes" icon-name="standard:contract">
+        <div class="slds-m-around_medium">
+            <!-- Error Handling -->
+            <template if:true={error}>
+                <div class="slds-text-color_error">
+                    An error occurred: {error.body.message}
+                </div>
+            </template>
+
+            <!-- Contractor Changes Table -->
+            <template if:true={hasContractorChanges}>
+                <lightning-datatable
+                    key-field="id"
+                    data={contractorChanges}
+                    columns={columns}
+                    onsave={handleSave}
+                    draft-values={draftValues}>
+                </lightning-datatable>
+            </template>
+
+            <!-- No Records Found -->
+            <template if:false={hasContractorChanges}>
+                <div class="slds-text-align_center slds-m-around_medium">
+                    No contractor changes found for this opportunity.
+                </div>
+            </template>
+
+            <!-- Totals Section -->
+            <div class="slds-m-top_medium slds-grid slds-grid_vertical-align-center slds-gutters">
+                <div class="slds-col">
+                    <strong>Opportunity Amount:</strong> {formattedOpportunityAmount}
+                </div>
+                <div class="slds-col">
+                    <strong>Total Contractor Cost:</strong> {formattedTotalCost}
+                </div>
+            </div>
+        </div>
+    </lightning-card>
+</template>
